@@ -1,0 +1,12 @@
+{% extends 'base.html' %} {% block content %}
+<div style="text-align: center; padding: 50px 0">
+    <h1 style="color: #e74c3c">Access Denied</h1>
+    <p style="font-size: 1.2em">
+        {{ message|default:"You do not have permission to access this resource."
+        }}
+    </p>
+    <div style="margin-top: 30px">
+        <a href="{% url 'dashboard' %}" class="btn">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
