@@ -1,0 +1,21 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Add/Edit Note</h2>
+<p>Update the doctor's notes for this medical record.</p>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="note">Notes</label>
+        <textarea
+            name="note"
+            id="note"
+            rows="10"
+            placeholder="Enter notes here..."
+        ></textarea>
+    </div>
+    <button type="submit" class="btn">Save Note</button>
+    <a href="{% url 'dashboard' %}" class="btn" style="background: #95a5a6"
+        >Cancel</a
+    >
+</form>
+{% endblock %}

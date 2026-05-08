@@ -1,0 +1,49 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Search Medical Records</h2>
+<p>Search for diagnoses, treatments, or prescriptions.</p>
+
+<form method="GET" action="{% url 'search_records' %}">
+    <div style="display: flex; gap: 10px">
+        <input
+            type="text"
+            name="q"
+            value="{{ query }}"
+            placeholder="Search by title..."
+            style="flex: 1"
+        />
+        <button type="submit" class="btn">Search</button>
+    </div>
+</form>
+
+{% if query %}
+<h3 style="margin-top: 30px">Results for "{{ query }}"</h3>
+{% if records %}
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in records %}
+        <tr>
+            <td>{{ record.0 }}</td>
+            <td>{{ record.1 }}</td>
+            <td>{{ record.2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No records found matching your query.</p>
+{% endif %} {% endif %}
+
+<div class="vulnerability-note">
+    <strong>Vulnerability: SQL Injection (A03:2021)</strong><br />
+    The search query is directly concatenated into a raw SQL string. Try
+    entering <code>' OR '1'='1</code> in the search field to see all records in
+    the database.
+</div>
+{% endblock %}

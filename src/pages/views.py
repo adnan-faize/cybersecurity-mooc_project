@@ -1,12 +1,13 @@
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from django.db import connection
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Appointment, Doctor, MedicalRecord, Patient
+from .models import Appointment, MedicalRecord, Patient
 
 
 def home(request):
@@ -155,4 +156,6 @@ def export_data(request):  # TODO : Flaw nº4
 @login_required
 def update_patient_info(request):
     if request.method == "POST":
-        patient = get_object_or_404
+        patient = get_object_or_404(Patient, user=request.user)
+        patient.allergies = request.POST.get("allergies", patient.allergies)
+        patient.blood_type = request.POST.get("blood_type")

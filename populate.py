@@ -75,7 +75,7 @@ def populate():
 
     # Create Doctor profile
     Doctor.objects.get_or_create(
-        user=ud, defaults={"specialty": "Diagnostics", "employee_id": "DOC001"}
+        user=ud, defaults={"speciality": "Diagnostics", "employee_id": "DOC001"}
     )
 
     # Create Medical Records
