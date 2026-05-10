@@ -4,15 +4,11 @@ This is a Django-based web application developed for the Cybersecurity MOOC at t
 
 The project contains 5 intentional security flaws from the OWASP Top 10 (2021 list) : 
 
-##### 1. SQL Injection (A03:2021 Injection)
-
-##### 2. XSS Injection (A03:2021 Injection)
-
-##### 3. Insecure Direct Object Reference (A01:2021 Broken Access Control)
-
-##### 4. Sensitive Data Exposure (A02:2021 Cryptographic Failure)
-
-##### 5. Cross-Site Request Forgery
+1. SQL Injection 
+2. XSS Injection 
+3. Insecure Direct Object Reference (IDOR)
+4. Sensitive Data Exposure
+5. Cross-Site Request Forgery (CSRF)
 
 
 # Installation
@@ -26,8 +22,8 @@ cd cybersecurity-mooc_project
 python -m venv venv
 
 # 3. Activate the virtual environment
-venv/Scripts/activate    # Windows
-source venv/bin/activate # Linux / MacOS
+venv/Scripts/activate    # for Windows
+source venv/bin/activate # for Linux / MacOS
 
 # 4. Install dependencies
 pip install -r requirements.txt

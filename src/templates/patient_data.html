@@ -31,13 +31,4 @@
 </table>
 {% else %}
 <p>No records available.</p>
-{% endif %}
-
-<div class="vulnerability-note">
-    <strong>Vulnerability: Broken Access Control (A01:2021) - IDOR</strong
-    ><br />
-    This page can be accessed by any logged-in user if they know the Patient ID.
-    Try changing the ID in the URL to <code>PAT000002</code> to see another
-    patient's data.
-</div>
-{% endblock %}
+{% endif %} {% endblock %}

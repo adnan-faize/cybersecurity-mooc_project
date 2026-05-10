@@ -103,7 +103,7 @@ def search_records(request):
 
 
 @login_required
-def add_note(request):  # TODO XSS injection
+def add_note(request):  # TODO Flaw nº2 : XSS injection
     if request.method == "POST":
         record_id = request.session.get("e")
 
@@ -133,7 +133,6 @@ def api_get_record(request, record_id):
     # Fix : Check if the record belongs to the current user
     # if record.patient.user != request.user:
     #     return JsonResponse({ 'error': 'Unauthorized' }, status=403)
-    #
     return JsonResponse(
         {
             "id": record.id,
@@ -146,7 +145,7 @@ def api_get_record(request, record_id):
 
 
 @login_required
-def export_data(request):  # TODO : Flaw nº4
+def export_data(request):  # TODO Flaw nº4 : No encryption
     pass
 
 
@@ -159,3 +158,6 @@ def update_patient_info(request):
         patient = get_object_or_404(Patient, user=request.user)
         patient.allergies = request.POST.get("allergies", patient.allergies)
         patient.blood_type = request.POST.get("blood_type")
+        patient.save()
+        return redirect("dashboard")
+    return redirect("dashboard")

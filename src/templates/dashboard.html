@@ -90,15 +90,4 @@
 </div>
 {% endfor %} {% else %}
 <p>No medical records found.</p>
-{% endif %}
-
-<div class="vulnerability-note">
-    <strong>Vulnerability: Cross-Site Scripting (A03:2021)</strong><br />
-    The "Doctor's Notes" field is rendered using the <code>|safe</code> filter.
-    Try adding a note like
-    <code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code>. <br /><br />
-    <strong>Vulnerability: CSRF</strong><br />
-    The "Update Profile" form is vulnerable to CSRF because its view is
-    <code>@csrf_exempt</code>.
-</div>
-{% endblock %}
+{% endif %} {% endblock %}

