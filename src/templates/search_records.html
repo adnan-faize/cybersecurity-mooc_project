@@ -38,12 +38,4 @@
 </table>
 {% else %}
 <p>No records found matching your query.</p>
-{% endif %} {% endif %}
-
-<div class="vulnerability-note">
-    <strong>Vulnerability: SQL Injection (A03:2021)</strong><br />
-    The search query is directly concatenated into a raw SQL string. Try
-    entering <code>' OR '1'='1</code> in the search field to see all records in
-    the database.
-</div>
-{% endblock %}
+{% endif %} {% endif %} {% endblock %}

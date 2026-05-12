@@ -94,13 +94,25 @@ def search_records(request):
     query = request.GET.get("q", "")
     records = []
     if query:
+        try:
+            patient = Patient.objects.get(user=request.user)
+            patient_clause = f"patient_id = {patient.id} AND "
+        except Patient.DoesNotExist:
+            return render(request, "error.html")
+
         cursor = connection.cursor()
         # Flaw nº1 : SQL Injection
-        # Fix : aa
-        # ...
-        sql = f"SELECT id, title, description FROM pages_medicalrecord WHERE title LIKE '%{query}%'"
-        cursor.execute(sql)
+        # Fix : Use parametrized query
+        # cursor.execute(
+        #     f"SELECT id, title, description FROM pages_medicalrecord WHERE {patient_clause}title LIKE %s",
+        #     [f"%{query}%"],
+        # )
+        cursor.execute(
+            f"SELECT id, title, description FROM pages_medicalrecord WHERE {patient_clause}title LIKE '%{query}%'"
+        )
         records = cursor.fetchall()
+
+    return render(request, "search_records.html", {"records": records, "query": query})
 
 
 @login_required
@@ -132,7 +144,7 @@ def view_patient_data(request, patient_id):
     # Flaw nº3 : IDOR
     # Fix : Check if the patient belongs to the current user
     # if patient.user != request.user:
-    #     return render(request, 'error.html', { 'message': 'Access Denied' })
+    #     return render(request, 'error.html')
     records = MedicalRecord.objects.filter(patient=patient)
     return render(
         request,
