@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.db import connection
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Appointment, MedicalRecord, Patient
@@ -103,9 +104,26 @@ def search_records(request):
 
 
 @login_required
-def add_note(request):  # TODO Flaw nº2 : XSS injection
+def add_note(request):
     if request.method == "POST":
-        record_id = request.session.get("e")
+        record_id = request.POST.get("record_id")
+        note_text = request.POST.get("note")
+
+        if not record_id:
+            return redirect("dashboard")
+
+        record = get_object_or_404(MedicalRecord, id=record_id)
+
+        # Flaw nº2 : XSS Injection
+        # Fix : Sanitize the text
+        # record.notes = escape(note_text)
+        record.notes = note_text
+        record.save()
+
+        return redirect("dashboard")
+
+    record_id = request.GET.get("record_id")
+    return render(request, "add_note.html", {"record_id": record_id})
 
 
 @login_required

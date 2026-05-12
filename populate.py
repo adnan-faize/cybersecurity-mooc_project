@@ -12,7 +12,7 @@ django.setup()
 
 from django.contrib.auth.models import User
 
-from src.pages.models import Appointment, Doctor, MedicalRecord, Patient
+from src.pages.models import Appointment, MedicalRecord, Patient
 
 
 def populate():
@@ -36,13 +36,6 @@ def populate():
     )
     u3.set_password("test1234")
     u3.save()
-
-    # Create Doctor User
-    ud, _ = User.objects.get_or_create(
-        username="dr_house", first_name="Gregory", last_name="House"
-    )
-    ud.set_password("test1234")
-    ud.save()
 
     # Create Patients
     p1, _ = Patient.objects.get_or_create(
@@ -71,11 +64,6 @@ def populate():
             "blood_type": "B+",
             "allergies": "None",
         },
-    )
-
-    # Create Doctor profile
-    Doctor.objects.get_or_create(
-        user=ud, defaults={"speciality": "Diagnostics", "employee_id": "DOC001"}
     )
 
     # Create Medical Records

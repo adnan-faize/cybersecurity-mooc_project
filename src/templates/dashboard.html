@@ -72,14 +72,12 @@
     {% endif %}
 
     <div style="margin-top: 10px">
-        {% if is_doctor %}
         <a
             href="{% url 'add_note' %}?record_id={{ record.id }}"
             class="btn"
             style="padding: 5px 10px; font-size: 0.8em"
             >Edit Notes</a
         >
-        {% endif %}
         <a
             href="{% url 'api_get_record' record.id %}"
             target="_blank"
