@@ -1,7 +1,11 @@
+import hashlib
+
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.db import connection
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,12 +29,28 @@ def register_view(request):
 
         patient_id = f"PAT{str(Patient.objects.count() + 1).zfill(6)}"
 
+        # Flaw nº1 : No password validation (allows 1234) & Password hashed with unsalted MD5
+        # Fix : Use Django's built-in validate_password & create_user which uses PBKDF2
+        # user = User.objects.create_user(
+        #     username=username,
+        #     password=password,
+        #     first_name=first_name,
+        #     last_name=last_name,
+        # )
+        # try:
+        #     validate_password(password, user)
+        # except ValidationError as e:
+        #     user.delete()
+        #     return render(request, "register.html", {"error": e.messages})
+
+        hashed_password = hashlib.md5(password.encode()).hexdigest()
         user = User.objects.create_user(
             username=username,
-            password=password,
             first_name=first_name,
             last_name=last_name,
         )
+        user.password = hashed_password
+        user.save()
 
         Patient.objects.create(
             user=user,
@@ -101,7 +121,7 @@ def search_records(request):
             return render(request, "error.html")
 
         cursor = connection.cursor()
-        # Flaw nº1 : SQL Injection
+        # Flaw nº2 : SQL Injection
         # Fix : Use parametrized query
         # cursor.execute(
         #     f"SELECT id, title, description FROM pages_medicalrecord WHERE {patient_clause}title LIKE %s",
@@ -126,8 +146,11 @@ def add_note(request):
 
         record = get_object_or_404(MedicalRecord, id=record_id)
 
-        # Flaw nº2 : XSS Injection
-        # Fix : Sanitize the text
+        if record.patient.user != request.user:
+            return render(request, "error.html")
+
+        # Flaw nº3 : XSS Injection
+        # Fix : Sanitize the text using Django's built-in escape or removing |safe in the html 
         # record.notes = escape(note_text)
         record.notes = note_text
         record.save()
@@ -141,7 +164,7 @@ def add_note(request):
 @login_required
 def view_patient_data(request, patient_id):
     patient = get_object_or_404(Patient, patient_id=patient_id)
-    # Flaw nº3 : IDOR
+    # Flaw nº4 : IDOR
     # Fix : Check if the patient belongs to the current user
     # if patient.user != request.user:
     #     return render(request, 'error.html')
@@ -159,7 +182,7 @@ def view_patient_data(request, patient_id):
 @login_required
 def api_get_record(request, record_id):
     record = get_object_or_404(MedicalRecord, id=record_id)
-    # Flaw nº3 : IDOR
+    # Flaw nº4 : IDOR
     # Fix : Check if the record belongs to the current user
     # if record.patient.user != request.user:
     #     return JsonResponse({ 'error': 'Unauthorized' }, status=403)
@@ -172,11 +195,6 @@ def api_get_record(request, record_id):
             "notes": record.notes,
         }
     )
-
-
-@login_required
-def export_data(request):  # TODO Flaw nº4 : No encryption
-    pass
 
 
 # Flaw nº5 : CSRF

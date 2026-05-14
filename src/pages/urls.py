@@ -4,7 +4,6 @@ from .views import (
     add_note,
     api_get_record,
     dashboard,
-    export_data,
     home,
     login_view,
     logout_view,
@@ -24,6 +23,5 @@ urlpatterns = [
     path("search/", search_records, name="search_records"),
     path("add-note/", add_note, name="add_note"),
     path("update-info/", update_patient_info, name="update_info"),
-    path("export/", export_data, name="export_data"),
     path("api/record/<int:record_id>/", api_get_record, name="api_get_record"),
 ]

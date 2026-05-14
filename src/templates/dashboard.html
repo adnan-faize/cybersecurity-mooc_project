@@ -1,9 +1,6 @@
 {% extends 'base.html' %} {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center">
     <h2>Patient Dashboard: {{ patient.user.get_full_name }}</h2>
-    <a href="{% url 'export_data' %}" class="btn" style="background: #9b59b6"
-        >Export My Data (JSON)</a
-    >
 </div>
 
 <div class="card" style="margin-top: 20px">
@@ -21,7 +18,7 @@
         method="POST"
         style="margin-top: 20px"
     >
-        <!-- FLAW 5: CSRF vulnerability (missing {% csrf_token %} if @csrf_exempt is used, but here we intentionally omit it or rely on @csrf_exempt in view) -->
+        {% csrf_token %}
         <div style="display: flex; gap: 20px">
             <div style="flex: 1">
                 <label>Blood Type</label>
@@ -66,7 +63,10 @@
         "
     >
         <strong>Doctor's Notes:</strong><br />
-        <!-- FLAW 4: Stored XSS - rendering unsanitized input with |safe -->
+        <!--
+        FLAW nº3 : XSS Injection (renders unsanitized input)
+        Fix : Remove |safe
+        -->
         {{ record.notes|safe }}
     </div>
     {% endif %}

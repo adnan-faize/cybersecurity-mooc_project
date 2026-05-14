@@ -1,0 +1,157 @@
+LINK: https://github.com/example/cybersecurity-mooc-project
+INSTALLATION INSTRUCTIONS:
+To set up the project locally for audit and testing purposes, follow these steps:
+1. Clone the repository to your local machine.
+2. Ensure you have Python 3.10+ installed.
+3. Create a virtual environment: `python3 -m venv .venv`
+4. Activate the virtual environment: `source .venv/bin/activate` (or `.venv\Scripts\activate` on Windows).
+5. Install the required dependencies: `pip install -r requirements.txt`
+6. Prepare the database: `python3 manage.py makemigrations pages && python3 manage.py migrate`
+7. (Optional) Populate the database with sample data: `python3 populate.py`
+8. Start the development server: `python3 manage.py runserver`
+9. Access the application at `http://127.0.0.1:8000/`.
+
+CYBERSECURITY AUDIT REPORT: HEALTHCARE MANAGEMENT SYSTEM
+
+This comprehensive audit report identifies and analyzes five critical security vulnerabilities within the HealthCare Management System. This application is designed to manage sensitive patient data, including medical records, prescriptions, and personal profiles. Given the sensitivity of this information, adhering to the highest security standards is non-negotiable. Our audit revealed significant flaws that could lead to full database compromise, unauthorized data access, and session hijacking.
+
+FLAW 1: SQL Injection (SQLi)
+Exact Source Link: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L102
+
+Description:
+The search functionality implemented in the `search_records` view is fundamentally insecure. It utilizes raw SQL queries constructed via Python f-strings, which directly interpolate user-supplied input into the SQL command. The specific line at fault is: `cursor.execute(f"SELECT id, title, description FROM pages_medicalrecord WHERE {patient_clause}title LIKE '%{query}%'")`.
+
+This is a classic SQL Injection vulnerability. An attacker can craft a `query` string that breaks out of the intended SQL logic. For example, providing a payload like `'); DROP TABLE pages_medicalrecord; --` could result in catastrophic data loss. More subtly, an attacker could use boolean-based or union-based techniques to extract sensitive information from other tables, such as the `auth_user` table containing usernames and hashed passwords. The screenshot `screenshots/flaw_1_before.png` illustrates the application returning results for a standard query, while `screenshots/flaw_1_after.png` could demonstrate the result of an injected payload (e.g., returning all records).
+
+How to fix it:
+The most robust fix is to use Django's Object-Relational Mapping (ORM), which uses prepared statements under the hood to safely handle user input. If raw SQL must be used, the `cursor.execute` method should be passed the query and the parameters as separate arguments.
+
+# Fix in src/pages/views.py
+# @login_required
+# def search_records(request):
+#     query = request.GET.get("q", "")
+#     records = []
+#     if query:
+#         # Secure implementation using Django's ORM
+#         patient = get_object_or_404(Patient, user=request.user)
+#         records = MedicalRecord.objects.filter(
+#             patient=patient,
+#             title__icontains=query
+#         ).values('id', 'title', 'description')
+#
+#         # Alternatively, if raw SQL is strictly required, use parameters:
+#         # cursor.execute(
+#         #     "SELECT id, title, description FROM pages_medicalrecord WHERE patient_id = %s AND title LIKE %s",
+#         #     [patient.id, f"%{query}%"]
+#         # )
+#     return render(request, "search_records.html", {"records": records, "query": query})
+
+Source Link to fix: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L95
+
+
+FLAW 2: Cross-Site Request Forgery (CSRF)
+Exact Source Link: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L173
+
+Description:
+The `update_patient_info` view, which handles profile updates (blood type, allergies), is explicitly exempted from CSRF protection using the `@csrf_exempt` decorator. Furthermore, the corresponding form in `dashboard.html` lacks the necessary `{% csrf_token %}`. CSRF is a vulnerability where a malicious site can force a user's browser to send a request to the application without the user's knowledge or consent, leveraging the user's active session.
+
+An attacker can host a simple HTML page (like the provided `csrf_attack.html`) that submits a hidden POST request to the update endpoint. If a logged-in user visits the malicious page, their profile data will be modified instantly. The screenshot `screenshots/flaw_2_before.png` shows a normal profile, and `screenshots/flaw_2_after.png` shows the "PWNED" state after a successful CSRF attack. This bypasses the core security assumption that only intentional user actions should modify state.
+
+How to fix it:
+Remove the `@csrf_exempt` decorator to re-enable Django's global CSRF protection middleware for this view. Additionally, add the `{% csrf_token %}` tag to all POST forms in the templates.
+
+# Fix in src/pages/views.py
+# # Remove the @csrf_exempt decorator
+# @login_required
+# def update_patient_info(request):
+#     ...
+
+# Fix in src/templates/dashboard.html
+# <form action="{% url 'update_info' %}" method="POST">
+#     {% csrf_token %} <!-- Add this line -->
+#     ...
+# </form>
+
+Source Link to fix: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L173
+
+
+FLAW 3: Insecure Direct Object Reference (IDOR)
+Exact Source Link: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L136
+
+Description:
+The views `view_patient_data` and `api_get_record` are vulnerable to IDOR. They fetch sensitive data based on a `patient_id` or `record_id` parameter directly from the URL. While they require the user to be logged in, they do not verify that the logged-in user has the authority to access the requested specific record.
+
+This allows horizontal privilege escalation. A patient can view another patient's data simply by guessing or iterating through patient IDs. In `screenshots/flaw_3_1_before.png` and `flaw_3_2_before.png`, we see unauthorized access to records that do not belong to the current user. In a medical context, this is a severe violation of confidentiality and could lead to significant legal and ethical consequences.
+
+How to fix it:
+Implement strict ownership checks. Ensure that the requested `Patient` or `MedicalRecord` object is linked to the `request.user`.
+
+# Fix in src/pages/views.py
+# @login_required
+# def view_patient_data(request, patient_id):
+#     patient = get_object_or_404(Patient, patient_id=patient_id)
+#     # Check if the patient belongs to the current user
+#     if patient.user != request.user:
+#         return render(request, "error.html", {"message": "You do not have permission to view this data."})
+#     ...
+
+# Fix in src/pages/views.py (API endpoint)
+# @login_required
+# def api_get_record(request, record_id):
+#     record = get_object_or_404(MedicalRecord, id=record_id)
+#     if record.patient.user != request.user:
+#         return JsonResponse({'error': 'Unauthorized'}, status=403)
+#     ...
+
+Source Link to fix: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L139
+
+
+FLAW 4: Stored Cross-Site Scripting (XSS)
+Exact Source Link: https://github.com/example/cybersecurity-mooc-project/blob/main/src/pages/views.py#L127
+
+Description:
+The "Doctor's Notes" feature is vulnerable to Stored XSS. The `add_note` view saves user input directly to the database without any sanitization. Crucially, the `dashboard.html` template uses the `|safe` filter when rendering these notes: `{{ record.notes|safe }}`. This filter explicitly tells Django to skip its default HTML escaping.
+
+An attacker can submit a note containing a script tag, such as `<script>alert('XSS')</script>`. This script will be stored in the database and executed in the browser of any user who views that medical record. This can be used to steal session cookies, redirect users to phishing sites, or deface the application. Stored XSS is particularly dangerous because it doesn't require the victim to click a malicious link; simply viewing the legitimate "Dashboard" triggers the attack.
+
+How to fix it:
+Remove the `|safe` filter from the template. Django's default behavior is to escape HTML, which converts `<` to `&lt;`, rendering the script harmless. If you need to allow some safe HTML tags, use a library like `bleach` to sanitize the input before saving.
+
+# Fix in src/templates/dashboard.html
+# <!-- Remove the |safe filter to enable auto-escaping -->
+# <div class="notes-content">
+#     {{ record.notes }}
+# </div>
+
+# Fix in src/pages/views.py
+# from django.utils.html import escape
+# ...
+# # Optionally escape on input for extra security
+# record.notes = escape(note_text)
+# record.save()
+
+Source Link to fix: https://github.com/example/cybersecurity-mooc-project/blob/main/src/templates/dashboard.html#L80
+
+
+FLAW 5: Security Misconfiguration (Hardcoded Secrets and Debug Mode)
+Exact Source Link: https://github.com/example/cybersecurity-mooc-project/blob/main/src/config/settings.py#L23
+
+Description:
+The application configuration in `settings.py` violates several security best practices. First, the `SECRET_KEY` is hardcoded. This key is used for critical cryptographic operations; if the source code is leaked or committed to a repository, the entire application's security is compromised. Second, `DEBUG = True` is enabled. In production, this causes Django to display detailed technical information (stack traces, environment variables, etc.) whenever an error occurs, providing an attacker with a roadmap of the system's internals.
+
+The screenshots `screenshots/flaw_5_before.png` and `flaw_5_after.png` likely show the difference between a detailed error page and a generic one. Additionally, `ALLOWED_HOSTS` is empty, which can facilitate Host Header injection attacks. These misconfigurations are common in development but fatal in production.
+
+How to fix it:
+Use environment variables for sensitive settings. Disable debug mode and specify authorized hosts.
+
+# Fix in src/config/settings.py
+# import os
+# # Use environment variables for sensitive data
+# SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+# DEBUG = False
+# ALLOWED_HOSTS = ['healthcare.example.com', '127.0.0.1']
+
+Source Link to fix: https://github.com/example/cybersecurity-mooc-project/blob/main/src/config/settings.py#L23
+
+CONCLUSION:
+The HealthCare Management System exhibits several high-severity vulnerabilities that must be addressed before any real-world deployment. The combination of SQL injection, CSRF, IDOR, and XSS creates a high-risk environment for sensitive patient data. By following the remediation steps outlined in this report—specifically leveraging Django's built-in security features, implementing rigorous access control, and securing application configurations—the system's security posture can be significantly improved. Regular security audits and automated scanning should be integrated into the development lifecycle to prevent regressions and identify new threats.
