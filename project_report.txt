@@ -3,15 +3,15 @@ https://github.com/adnan-faize/cybersecurity-mooc_project
 
 Installation Instructions :
 1. Clone the repository
-2. Create a virtual environment (python3 -m venv .venv)
+2. Create a virtual environment (python -m venv .venv)
 3. Activate the virtual environment
 	Windows (.venv\Scripts\activate)
 	Linux / MacOS (source .venv/bin/activate)
 4. Install the required dependencies (pip install -r requirements.txt)
-5. Prepare the database (python3 manage.py migrate)
-6. Populate the database (python3 populate.py)
-7. Start the dev server (python3 manage.py runserver)
-8. Access the application via a browser on http://127.0.0.1:8000/
+5. Prepare the database (python manage.py migrate)
+6. Populate the database (python populate.py)
+7. Start the dev server (python manage.py runserver)
+8. Access the application visiting http://127.0.0.1:8000/ on a browser
 
 
 I decided to make this project about a medical portal since it manages and stores very sensitive data, therefore would need to be well secured against any attack to prevent leaks. The structure is by no means done and the architecture isn't good, but serves as an example for this assignment.
