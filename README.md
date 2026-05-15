@@ -32,7 +32,7 @@ pip install -r requirements.txt
 python manage.py migrate
 
 # 6. Populate sample data
-python populate_data.py
+python populate.py
 
 # 7. Start the server
 python manage.py runserver
