@@ -4,10 +4,10 @@ This is a Django-based web application developed for the Cybersecurity MOOC at t
 
 The project contains 5 intentional security flaws from the OWASP Top 10 (2021 list) : 
 
-1. SQL Injection 
-2. XSS Injection 
-3. Insecure Direct Object Reference (IDOR)
-4. Sensitive Data Exposure
+1. Authentication Failures
+2. SQL Injection 
+3. XSS Injection 
+4. Insecure Direct Object Reference (IDOR)
 5. Cross-Site Request Forgery (CSRF)
 
 
