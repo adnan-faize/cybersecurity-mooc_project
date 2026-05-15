@@ -1,7 +1,7 @@
 
 https://github.com/adnan-faize/cybersecurity-mooc_project
 
-Installation Instructions : 
+Installation Instructions :
 1. Clone the repository
 2. Create a virtual environment (python3 -m venv .venv)
 3. Activate the virtual environment
@@ -9,26 +9,29 @@ Installation Instructions :
 	Linux / MacOS (source .venv/bin/activate)
 4. Install the required dependencies (pip install -r requirements.txt)
 5. Prepare the database (python3 manage.py migrate)
-6. Start the dev server (python3 manage.py runserver)
-7. Access the application via a browser on http://127.0.0.1:8000/
+6. Populate the database (python3 populate.py)
+7. Start the dev server (python3 manage.py runserver)
+8. Access the application via a browser on http://127.0.0.1:8000/
 
 
-I decided to make this project about a medical portal since it stores very sensitive information, therefore would need to be well secured against any attack to prevent data leaks. 
+I decided to make this project about a medical portal since it manages and stores very sensitive data, therefore would need to be well secured against any attack to prevent leaks. The structure is by no means done and the architecture isn't good, but serves as an example for this assignment.
 
 
 Flaw nº1 : Authentication Failures
 
 https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/src/pages/views.py#L32-L53
 
-Description : 
+Description :
 
-...
+First, the user registration view implementation lacks any form of password validation. It allows very weak passwords like 1234 that can easily be cracked.
+Second, the registration uses an unsalted MD5 hash. MD5 is known to be broken cryptographically, no longer being considered secure. Furthermore, the lack of salting, the same plaintext password generates the same hash, making crarcking it trivial to reverse the hashes to passwords when stolen from the database.
 
-How to fix : 
+How to fix :
 
-We could use Django's built-in validate_password to oblige user passwords meet some criteria, making them stronger against dictionary attacks or brute force attacks. Instead of hashing ourselves the password, and storing it afterwards inside the user, we should directly pass it as an argument when creating the user with Django's create_user, since it uses PBKDF2 hashing method to store the password.
+We could use Django's built-in validate_password to oblige user passwords meet some criteria, making them stronger against dictionary or brute force attacks.
+Instead of hashing ourselves the password with MD5 and storing it afterwards inside the user, we should directly pass it as an argument when creating the user with Django's built-in create_user. By default, it uses PBKDF2 hashing algorithm with a unique automatically generated cryptographic salt for every user.
 
-Figures : 
+Figures :
 
 https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/screenshots/flaw_1_1_before.png
 
@@ -43,16 +46,16 @@ Flaw nº2 : SQL Injection
 
 https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/src/pages/views.py#L124-L132
 
-Description : 
+Description :
 
-The implementation of the search feature within the search_records view is insecure. It is done through the use of raw SQL queries using Python f-strings that insert user input into the SQL code itself. 
-A malicious individual may construct a query string that allows him to break the intended SQL logic. This could lead to severe damage, including complete data deletion. Furthermore, an attacker could retrieve sensitive data from other tables by using unions or booleans. 
+The implementation of the search feature within the search_records view is insecure. It is done through the use of raw SQL queries using Python f-strings that insert user input into the SQL code itself.
+A malicious individual may construct a query string that allows him to break the intended SQL logic. This could lead to severe damage, including complete data deletion. Furthermore, an attacker could retrieve sensitive data from other tables by using unions or booleans.
 
-How to fix : 
+How to fix :
 
-We would just need to use a parametrized query instead of inserting the user input directly into the query with an f-string. Djang's ORM leverages prepared statements behind the scenes to ensure safe handling of user input, avoiding SQL injections. 
+We would just need to use a parametrized query instead of inserting the user input directly into the query with an f-string. Djang's ORM leverages prepared statements behind the scenes to ensure safe handling of user input, avoiding SQL injections.
 
-Figures : 
+Figures :
 
 https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/screenshots/flaw_2_before.png
 
@@ -67,12 +70,12 @@ https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/src/templa
 
 Description :
 
-The doctor's notes functionality in the add_note view suffers from a XSS Injection vulnerability. This input is saved to the database directly without sanitizing the data. 
-The Doctor's notes section on dashboard.html utilized the safe filter while rendering the data, instructing Django not to escape the HTML. An attacker may add a new note with an embedded script like \<script>alert('XSS')\</script>. The script with be stored in the database and run whenever the note is viewed by any user. The script might be used for cookie theft, redirect to phishing pages, or even modify the application. Stored XSS is very dangerous since it can be exploited without luring the victims to malicious links, simply visiting the legitimate note allowing to execute arbitrary JavaScript code. 
+The doctor's notes functionality in the add_note view suffers from a XSS Injection vulnerability. This input is saved to the database directly without sanitizing the data.
+The Doctor's notes section on dashboard.html utilized the safe filter while rendering the data, instructing Django not to escape the HTML. An attacker may add a new note with an embedded script like \<script>alert('XSS')\</script>. The script with be stored in the database and run whenever the note is viewed by any user. The script might be used for cookie theft, redirect to phishing pages, or even modify the application. Stored XSS is very dangerous since it can be exploited without luring the victims to malicious links, simply visiting the legitimate note allowing to execute arbitrary JavaScript code.
 
-How to fix : 
+How to fix :
 
-We should remove the |safe filter from the template dashboard.html since Django's default behavior is to escape HTML, converting < to &lt; for example, allowing to render the script without executing, making it harmless. We could also just sanitize the input using Django's built-in escape library before saving. 
+We should remove the |safe filter from the template dashboard.html since Django's default behavior is to escape HTML, converting < to &lt; for example, allowing to render the script without executing, making it harmless. We could also just sanitize the input using Django's built-in escape library before saving.
 
 Figures :
 
@@ -86,12 +89,12 @@ https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/src/pages/
 
 https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/src/pages/views.py#L185-L188
 
-Description : 
+Description :
 
-The view_patient_data and api_get_record views are susceptible to IDOR attacks. The views retrieve sensitive information based on the patient_id or record_id attribute passed via the URL. Even though the views demand the user to be authenticated, there is no check to confirm whether the logged-in user is authorized to access the particular resource. 
+The view_patient_data and api_get_record views are susceptible to IDOR attacks. The views retrieve sensitive information based on the patient_id or record_id attribute passed via the URL. Even though the views demand the user to be authenticated, there is no check to confirm whether the logged-in user is authorized to access the particular resource.
 This vulnerability lets patients access anybody else's data by guessing or iterating over patient_id. (I wanted to add this vulnerability because the French National ID issuer ANTS has recently been victim of an attack using this).
 
-How to fix : 
+How to fix :
 
 We just need to check for ownership. Ensure that the requested Patient or MedicalRecord object is linked to the request.user.
 
@@ -113,14 +116,14 @@ https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/src/pages/
 Description :
 
 The update_patient_info view, that takes care of profile updates like blood group and any allergens, has been excluded from CSRF by setting the decorator @csrf_exempt. Cross Site Request Forgery is an exploit that allows a third party attacker website on the user's browser to make a request to the server on behalf of the logged in user without his consent.
-By creating a simple HTML page with a POST request to the target endpoint (in this case the medical portal) in the form of a hidden action. The moment the authenticated user opens the web page, the user's profile information would be changed at once. 
-By combining this vulnerability with an XSS injection, an attack could have devastating effects, allowing to propagate malicious JavaScript code without by letting the users be the attackers. 
+By creating a simple HTML page with a POST request to the target endpoint (in this case the medical portal) in the form of a hidden action. The moment the authenticated user opens the web page, the user's profile information would be changed at once.
+By combining this vulnerability with an XSS injection, an attack could have devastating effects, allowing to propagate malicious JavaScript code without by letting the users be the attackers.
 
-How to fix : 
+How to fix :
 
 We just need to remove the @csrf_exempt decorator from the update_patient_info view.
 
-Figures : 
+Figures :
 
 https://github.com/adnan-faize/cybersecurity-mooc_project/blob/master/screenshots/flaw_5_before.png
 
